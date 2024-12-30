@@ -24,5 +24,8 @@
             </intent-filter>
         </activity>
     </application>
-
+<!--    <uses-permission-->
+<!--        tools:ignore="ProtectedPermissions"-->
+<!--        android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" -->
+<!--        />-->
 </manifest>

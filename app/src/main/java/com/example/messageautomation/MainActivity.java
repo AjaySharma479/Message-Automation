@@ -1,28 +1,30 @@
 package com.example.messageautomation;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
-
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-
-import androidx.core.view.WindowCompat;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-
 import com.example.messageautomation.databinding.ActivityMainBinding;
+import com.example.messageautomation.store.WhatsappStore;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-
-    private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+
+    private static final String SHARED_PREFS_NAME = "MessageAutomationPrefs";
+
+    private EditText name, message;
+    private TextView displaySavedData;
+    private SharedPreferences sharedPreferences;
+    private WhatsappStore whatsappStore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,20 +33,55 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, MODE_PRIVATE);
+        whatsappStore = new WhatsappStore(sharedPreferences);
+
+        name = findViewById(R.id.name);
+        message = findViewById(R.id.message);
+        displaySavedData = findViewById(R.id.displaySavedData);
+
+
         setSupportActionBar(binding.toolbar);
 
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        binding.saveButton.setOnClickListener(v -> saveData());
 
-        binding.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAnchorView(R.id.fab)
-                        .setAction("Action", null).show();
-            }
-        });
+        binding.loadButton.setOnClickListener(v -> loadData());
+    }
+
+    private void saveData() {
+        String nameString = name.getText().toString();
+        String messageString = message.getText().toString();
+        String data = nameString +
+                "#" +
+                messageString;
+
+
+        whatsappStore.saveData(data);
+
+        Toast.makeText(this, "Data saved!", Toast.LENGTH_SHORT).show();
+        name.setText("");
+        message.setText("");
+    }
+
+    private void loadData() {
+        String data = whatsappStore.loadData();
+        if(data.isEmpty()) {
+            displaySavedData.setText("No data saved yet!");
+        } else {
+            displaySavedData.setText(data);
+        }
+    }
+    private void sendToWhatsApp(String mobile, String text) {
+        try {
+            // Create an intent to open WhatsApp
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://wa.me/" + mobile + "?text=" + text));
+            intent.setPackage("com.whatsapp");
+            startActivity(intent);
+        } catch (Exception e) {
+            // Handle exception if WhatsApp is not installed
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -67,12 +104,5 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        return NavigationUI.navigateUp(navController, appBarConfiguration)
-                || super.onSupportNavigateUp();
     }
 }
